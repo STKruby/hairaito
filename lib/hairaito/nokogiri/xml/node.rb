@@ -65,7 +65,7 @@ module Hairaito
         # @param string [String] text for matching
         # @param options [Hash] @see #traverse_by_text_default_options
         # @return [Nokogiri::XML::Node] self node for chaining
-        def traverse_by_text(string, options, &block)
+        def traverse_by_text(string, options = {}, &block)
           traverse_by_text_defaults(options)
           traverse do |current_node|
             next if current_node.text?
@@ -126,7 +126,7 @@ module Hairaito
         end
 
         def highlight_by_ranges(ranges, options)
-          if options[:snippet][:part_tag].blank?
+          if options[:snippet][:part_wrapper].blank?
             raise ArgumentError.new('Snippet part wrapper tag is not specified!')
           end
           parts = []
@@ -135,7 +135,7 @@ module Hairaito
             range = range_data[:range]
             parts << (range.first > 0 ? text[0..(range.first - 1)]: '') if index == 0
             snippet_class = range_data[:starting] ? "#{options[:snippet][:starting_part_class]}" : ''
-            wrapper = document.create_element("#{options[:snippet][:part_tag]}", class: "#{options[:snippet][:part_class]} #{snippet_class}")
+            wrapper = document.create_element("#{options[:snippet][:part_wrapper]}", class: "#{options[:snippet][:part_wrapper_class]} #{snippet_class}")
             wrapper.content = text[range]
             parts << wrapper.to_s
             parts << text[(range.last + 1)..(ranges[index + 1][:range].first - 1)] if index < ranges.count - 1

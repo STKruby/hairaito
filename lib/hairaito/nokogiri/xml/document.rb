@@ -8,7 +8,7 @@ module Hairaito
         # @param snippets [Array<String>] text variants to be highlighted
         # @param options [Hash] custom highlighting options
         # @return [Nokogiri::XML::Document] self document for chaining
-        def highlight(snippets, options)
+        def highlight(snippets, options = {})
           highlighting_defaults(options)
           snippet_parts_to_wrap = []
           prepare_snippets(snippets).each do |snippet|
@@ -46,9 +46,8 @@ module Hairaito
                   content_wrapper_class: 'highlighting-base',
               },
               snippet: {
-                  part_tag: 'span',
-                  part_class: 'snippet-part',
-                  part_additional_classes: '',
+                  part_wrapper: 'span',
+                  part_wrapper_class: 'snippet-part',
                   starting_part_class: 'snippet-start',
               },
               numeration: {
@@ -85,7 +84,7 @@ module Hairaito
         end
 
         def numerate_snippet_parts
-          selector = @hl_opts[:snippet][:part_class].gsub(/\s+/, ' ').split(' ').map{|cl| ".#{cl}"}.join('')
+          selector = @hl_opts[:snippet][:part_wrapper_class].gsub(/\s+/, ' ').split(' ').map{|cl| ".#{cl}"}.join('')
           index = @hl_opts[:numeration][:start_with] - 1
           css(selector).each do |part|
             index += 1 if part[:class].split(' ').include?(@hl_opts[:snippet][:starting_part_class])
