@@ -91,12 +91,12 @@ module Hairaito
               offsets.each {|offset| yield(current_node, offset)} if block_given?
               if current_node != self
                 # Excludes processed offsets from all ancestors
-                current_node.ancestors.each do |ancestor|
-                  pos = ancestor.position_by_text_node(current_node.first_text_node)
-                  # Shifts all offsets according to ancestor inner position
-                  ancestor.exclude_offsets(offsets.map{|offset| [offset.first + pos, offset.last + pos]})
+                ([current_node] + current_node.ancestors).each do |node|
+                  pos = node.position_by_text_node(current_node.first_text_node)
+                  # Shifts all offsets according to node inner position and excludes from future processing
+                  node.exclude_offsets(offsets.map{|offset| [offset.first + pos, offset.last + pos]})
                   # Reaches highlighting base
-                  break if ancestor == self
+                  break if node == self
                 end
               end
             end
@@ -149,10 +149,12 @@ module Hairaito
           demand_length.present? ? index..[text.length - 1, index + demand_length - 1].min : 0..index
         end
 
+        # @return [Array] self node offsets were already processed
         def excluded_offsets
           @excluded_offsets ||= []
         end
 
+        # @param offsets [Array] self node offsets to be excluded in the future processing
         def exclude_offsets(offsets)
           @excluded_offsets ||= []
           @excluded_offsets += offsets
@@ -164,7 +166,8 @@ module Hairaito
           types.each do |type|
             offsets << text.to_enum(:scan, build_regexp(string, type, options)).map do
               offset = Regexp.last_match.offset(:text)
-              offset unless excluded_offsets.include?(offset)
+              # Only one highlighting per position
+              offset unless overlapped_offsets?(excluded_offsets, offset)
             end.compact || []
           end
           return *offsets
@@ -194,6 +197,13 @@ module Hairaito
             when :boundary_word
               return /(\A(?<text>#{string})(?!#{options[:word_parts]}))|((?<!#{options[:word_parts]})(?<text>#{string})\Z)|(\A(?<text>#{string})\Z)/
           end
+        end
+
+        def overlapped_offsets?(offsets_collection, offset_for_check)
+          offsets_collection.each do |offset|
+            return true if (offset_for_check.first...offset_for_check.last).overlaps?(offset.first...offset.last)
+          end
+          false
         end
 
       end

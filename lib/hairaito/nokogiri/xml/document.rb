@@ -11,7 +11,7 @@ module Hairaito
         def highlight(snippets, options)
           highlighting_defaults(options)
           snippet_parts_to_wrap = []
-          snippets.each do |snippet|
+          prepare_snippets(snippets).each do |snippet|
             highlighting_base.traverse_by_text(snippet, @hl_opts[:boundaries]) do |snippet_container, snippet_offset|
               start_node, start_inner_index = snippet_container.text_node_by_position(snippet_offset.first)
               start_range = start_node.text_range_by_index(start_inner_index, snippet.length)
@@ -75,6 +75,13 @@ module Hairaito
             @hl_base = base
           end
           @hl_base
+        end
+
+        # Longer snippets must go first due to situations with snippets overlapping
+        # Example: ['abc', 'abcdef'],
+        # without sorting this produces highlighting artifacts like shorter snippet duplication in result nodes
+        def prepare_snippets(snippets)
+          snippets.uniq.sort_by{|snippet| snippet.length}.reverse
         end
 
         def numerate_snippet_parts
